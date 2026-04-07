@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pink Hearts Page</title>
+    <style>
+        body {
+            background-color: pink;
+            margin: 0;
+            overflow: hidden;
+            position: relative;
+            height: 100vh;
+            font-family: sans-serif;
+        }
+        .heart {
+            position: absolute;
+            color: red;
+            font-size: 24px;
+            animation: fall linear infinite;
+        }
+        @keyframes fall {
+            0% { top: -50px; opacity: 1; }
+            100% { top: 100vh; opacity: 0; }
+        }
+        button {
+            position: absolute;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: white;
+            border: 2px solid black;
+            border-radius: 5px;
+        }
+        #button1 { top: 50%; left: 40%; }
+        #button2 { top: 50%; left: 60%; }
+
+        .question {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 28px;
+            font-weight: bold;
+            color: #3a003a;
+            z-index: 999;
+            pointer-events: none;
+            text-align: center;
+        }
+
+        /* Crying GIF styles - much larger and responsive */
+        .cry {
+            position: absolute;
+            width: 80vw;        /* large, relative to viewport */
+            max-width: 900px;   /* cap size on large screens */
+            min-width: 240px;   /* keep legible on small screens */
+            height: auto;
+            pointer-events: none;
+            z-index: 1000;
+            animation: cryFall 3s ease forwards;
+            transform-origin: center;
+        }
+        @keyframes cryFall {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(180px) scale(0.95); opacity: 0; }
+        }
+
+        /* Envelope / message styles - closed -> open behavior */
+        .envelope {
+            position: absolute;
+            left: 50%;
+            top: 62%;
+            transform: translate(-50%, -50%);
+            width: min(86vw, 420px);
+            max-width: 420px;
+            min-width: 240px;
+            background: linear-gradient(180deg,#fff,#ffeef6);
+            border: 2px solid #e0b8d6;
+            border-radius: 10px;
+            padding: 14px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+            z-index: 1200;
+            cursor: pointer;
+            text-align: center;
+            user-select: none;
+            overflow: hidden;
+        }
+        /* closed visual (an envelope icon / flap) */
+        .envelope .closedView {
+            font-size: 48px;
+            color: #c6006f;
+            line-height: 1;
+            display: block;
+            padding: 10px 0;
+        }
+        /* hidden inner message until open */
+        .envelope .innerMessage {
+            display: none;
+            color: #3a003a;
+            font-size: 18px;
+            line-height: 1.3;
+            padding: 6px 8px 0;
+        }
+        .envelope .innerSig {
+            margin-top: 12px;
+            font-size: 20px;
+            color: red;
+            display: inline-block;
+        }
+
+        /* when opened, show the message and hide the closed view */
+        .envelope.opened .closedView { display: none; }
+        .envelope.opened .innerMessage { display: block; animation: popIn 300ms cubic-bezier(.2,.9,.3,1); }
+
+        /* small entrance pop reused */
+        .envelope.pop { animation: popIn 400ms cubic-bezier(.2,.9,.3,1); }
+        @keyframes popIn {
+            0% { transform: translate(-50%, -40%) scale(0.92); opacity: 0; }
+            60% { transform: translate(-50%, -50%) scale(1.02); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+    </style>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // create centered question
+        const q = document.createElement('div');
+        q.className = 'question';
+        q.textContent = ' Do you love me ';
+        document.body.insertBefore(q, document.body.firstChild);
+
+        const btn1 = document.getElementById('button1'); // will be Yes
+        const btn2 = document.getElementById('button2'); // will be No
+
+        // make button1 a non-moving "Yes"
+        if (btn1) {
+            btn1.textContent = 'Yes';
+            // remove inline onclick so it does nothing
+            btn1.onclick = null;
+        }
+
+        // use the specified crying GIF only
+        const cryGifs = [
+            'https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExYjdzYWZrZWplMTM3ampkeDk4ZGZpZ3M1ZG83YnR1bmF6M2JtNXM2aSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/7AzEXdIb1wyCTWJntb/giphy.gif'
+        ];
+
+        function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+        function spawnCryNear(element) {
+            const img = document.createElement('img');
+            img.className = 'cry';
+            img.src = cryGifs[Math.floor(Math.random() * cryGifs.length)];
+            document.body.appendChild(img);
+
+            function positionImage() {
+                const w = img.offsetWidth || img.getBoundingClientRect().width;
+                const h = img.offsetHeight || img.getBoundingClientRect().height;
+
+                if (element && element.getBoundingClientRect) {
+                    const rect = element.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2 + window.scrollX;
+                    const centerY = rect.top + rect.height / 2 + window.scrollY;
+                    const offsetX = (Math.random() - 0.5) * Math.min(window.innerWidth * 0.4, 200);
+                    const offsetY = (Math.random() - 0.5) * Math.min(window.innerHeight * 0.15, 80);
+                    let left = centerX + offsetX - w / 2;
+                    let top = centerY + offsetY - h / 2;
+                    left = clamp(left, 0, window.innerWidth - w);
+                    top = clamp(top, 0, window.innerHeight - h);
+                    img.style.left = left + 'px';
+                    img.style.top = top + 'px';
+                } else {
+                    const left = Math.random() * Math.max(0, window.innerWidth - w);
+                    const top = Math.random() * Math.max(0, window.innerHeight - h);
+                    img.style.left = left + 'px';
+                    img.style.top = top + 'px';
+                }
+            }
+
+            if (img.complete) {
+                positionImage();
+            } else {
+                img.onload = positionImage;
+                setTimeout(positionImage, 300);
+            }
+
+            setTimeout(() => img.remove(), 3500);
+        }
+
+        // Envelope spawn & behavior (closed initially)
+        let envelopeShown = false;
+        function spawnEnvelope(messageText = "A small message for you") {
+            if (envelopeShown) return;
+            envelopeShown = true;
+
+            // remove question text and both buttons as requested
+            if (q && q.remove) q.remove();
+            if (btn1 && btn1.remove) btn1.remove();
+            if (btn2 && btn2.remove) btn2.remove();
+
+            const env = document.createElement('div');
+            env.className = 'envelope pop closed';
+            env.setAttribute('role', 'button');
+            env.setAttribute('aria-label', 'closed envelope');
+
+            // closed view (visual indicator)
+            const closedView = document.createElement('div');
+            closedView.className = 'closedView';
+            closedView.textContent = '📩'; // closed envelope icon
+
+            // hidden message content to show when opened
+            const innerMsg = document.createElement('div');
+            innerMsg.className = 'innerMessage';
+            innerMsg.textContent = messageText;
+
+            const sig = document.createElement('div');
+            sig.className = 'innerSig';
+            sig.textContent = '❤️';
+
+            env.appendChild(closedView);
+            env.appendChild(innerMsg);
+            env.appendChild(sig);
+            document.body.appendChild(env);
+
+            // clicking the closed envelope opens it and reveals the message
+            env.addEventListener('click', function openEnvelope() {
+                if (env.classList.contains('opened')) return;
+                env.classList.add('opened');
+                env.setAttribute('aria-label', 'opened envelope');
+                // after opening, we no longer need this listener for multiple opens
+            }, { once: true });
+        }
+
+        // ensure button2 is "No" and counts clicks to change the question text
+        if (btn2) {
+            btn2.textContent = 'No';
+            let noClicks = 0;
+            btn2.addEventListener('click', (ev) => {
+                noClicks++;
+                if (noClicks >= 3 && noClicks < 5) {
+                    q.textContent = ' i dont think you mean it ';
+                } else if (noClicks < 3) {
+                    q.textContent = ' Are You Sure ? ';
+                }
+
+                // spawn a crying GIF each time No is pressed
+                spawnCryNear(btn2);
+
+                // when clicked 5 times, remove buttons + text and show a closed envelope that opens on click
+                if (noClicks >= 5) {
+                    spawnEnvelope('ok on a serious note tho, i want to thank you for giving me the most amazing 4 months of my life and being the kindest soul ever. you have been an amazing companion and lover and most importantly a Wifey, words will never describe how much i love you and how much you mean to me. and eventually i just want to say i love you and not only you, i love your smile i love you voice and i love your eyes, I love that mole on your face, i love how you talk to me and how caring and loving you are and most importantly i love the fact that you are my wife so thank you my love and i love you infinitely  ❤️');
+                }
+                // movement behavior from inline onclick (moveButton(this)) can still occur if present
+            });
+        }
+    });
+    </script>
+</head>
+<body>
+    <script>
+        // Create falling hearts
+        function createHeart() {
+            const heart = document.createElement('div');
+            heart.className = 'heart';
+            heart.innerHTML = '❤️';
+            heart.style.left = Math.random() * 100 + 'vw';
+            heart.style.animationDuration = (Math.random() * 3 + 2) + 's';
+            document.body.appendChild(heart);
+            setTimeout(() => heart.remove(), 5000);
+        }
+        setInterval(createHeart, 300);
+
+        // Move buttons on click
+        function moveButton(button) {
+            const maxX = window.innerWidth - button.offsetWidth;
+            const maxY = window.innerHeight - button.offsetHeight;
+            button.style.left = Math.random() * maxX + 'px';
+            button.style.top = Math.random() * maxY + 'px';
+        }
+    </script>
+    <button id="button1" onclick="moveButton(this)">No</button>
+    <button id="button2" onclick="moveButton(this)">No</button>
+</body>
+</html>
